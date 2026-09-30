@@ -1,15 +1,15 @@
-//using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float jumpForce = 12f;
 
-    [Header("Ground Check (Opsional untuk saat ini)")]
+    [Header("Ground Check")]
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundLayer;
 
@@ -21,109 +21,245 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask interactableLayer;
 
     private Rigidbody2D rb;
+
     private float horizontalInput;
 
-    // Deklarasi variabel Input Action langsung di dalam skrip
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction interactAction;
 
-    void Awake()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
 
-        // 1. Setup Input Movement (A = Kiri [-1], D = Kanan [1])
+        // =========================
+        // MOVEMENT - A / D
+        // =========================
         moveAction = new InputAction("Move");
+
         moveAction.AddCompositeBinding("1DAxis")
             .With("Negative", "<Keyboard>/a")
             .With("Positive", "<Keyboard>/d");
 
-        // 2. Setup Input Jump (Spasi)
-        jumpAction = new InputAction("Jump", binding: "<Keyboard>/space");
-        jumpAction.performed += ctx => Jump(); // Panggil fungsi Jump() saat ditekan
+        // =========================
+        // JUMP - SPACE
+        // =========================
+        jumpAction = new InputAction(
+            "Jump",
+            binding: "<Keyboard>/space"
+        );
 
-        // 3. Setup Input Interact (E)
-        interactAction = new InputAction("Interact", binding: "<Keyboard>/e");
-        interactAction.performed += ctx => Interact(); // Panggil fungsi Interact() saat ditekan
+        jumpAction.performed += OnJump;
+
+        // =========================
+        // INTERACT - E
+        // =========================
+        interactAction = new InputAction(
+            "Interact",
+            binding: "<Keyboard>/e"
+        );
+
+        interactAction.performed += OnInteract;
     }
 
-    // Input Action WAJIB diaktifkan dan dinonaktifkan
-    void OnEnable()
+    private void OnEnable()
     {
         moveAction.Enable();
         jumpAction.Enable();
         interactAction.Enable();
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         moveAction.Disable();
         jumpAction.Disable();
         interactAction.Disable();
     }
 
-    void Update()
+    // =========================================================
+    // NETWORK SPAWN
+    // =========================================================
+
+    public override void OnNetworkSpawn()
     {
-        // Membaca nilai dari aksi bergerak setiap frame
+        base.OnNetworkSpawn();
+
+        Debug.Log(
+            "PLAYER SPAWNED | " +
+            "Owner: " + OwnerClientId +
+            " | Local Client: " +
+            NetworkManager.Singleton.LocalClientId +
+            " | IsOwner: " + IsOwner
+        );
+
+        // Only the owner controls this player.
+        if (!IsOwner)
+        {
+            Debug.Log(
+                "This player belongs to another client."
+            );
+        }
+        else
+        {
+            Debug.Log(
+                "This is MY player. Input enabled."
+            );
+        }
+    }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    private void Update()
+    {
+        // IMPORTANT:
+        // Only the client that owns this player can control it.
+        if (!IsOwner)
+            return;
+
         horizontalInput = moveAction.ReadValue<float>();
     }
 
-    void FixedUpdate()
+    // =========================================================
+    // PHYSICS MOVEMENT
+    // =========================================================
+
+    private void FixedUpdate()
     {
-        // Di Unity 6, Rigidbody2D menggunakan 'linearVelocity' (menggantikan 'velocity')
-        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
+        if (!IsOwner)
+            return;
+
+        rb.linearVelocity = new Vector2(
+            horizontalInput * moveSpeed,
+            rb.linearVelocity.y
+        );
+    }
+
+    // =========================================================
+    // JUMP
+    // =========================================================
+
+    private void OnJump(InputAction.CallbackContext context)
+    {
+        if (!IsOwner)
+            return;
+
+        Jump();
     }
 
     private void Jump()
     {
-        if (IsGrounded())
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-        }
+        if (!IsGrounded())
+            return;
+
+        rb.linearVelocity = new Vector2(
+            rb.linearVelocity.x,
+            jumpForce
+        );
     }
 
-    // Perbarui fungsi Interact() menjadi seperti ini:
-    private void Interact()
-    {
-        // Mencari objek di sekitar pemain yang berada di layer Interactable
-        Collider2D hit = Physics2D.OverlapCircle(transform.position, interactRange, interactableLayer);
-
-        if (hit != null)
-        {
-            KeysChamber chamber = hit.GetComponent<KeysChamber>();
-
-            if (chamber != null)
-            {
-                if (hasKey)
-                {
-                    chamber.InsertKey();
-                    hasKey = false; // Kunci terpakai
-                }
-                else
-                {
-                    Debug.Log("Kamu butuh Keys untuk mengaktifkan Chamber ini!");
-                }
-            }
-        }
-    }
-
-    // Tambahan opsional agar radius interaksi terlihat di Editor
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, interactRange);
-    }
+    // =========================================================
+    // GROUND CHECK
+    // =========================================================
 
     private bool IsGrounded()
     {
-        // Ubah return true menjadi return false agar tidak bisa lompat di udara
         if (groundCheck == null)
         {
-            Debug.LogWarning("GroundCheck belum dipasang di Inspector!");
+            Debug.LogWarning(
+                "GroundCheck belum dipasang di Inspector!"
+            );
+
             return false;
         }
 
-        // Mengecek area di bawah kaki karakter apakah menyentuh layer Ground
-        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+        return Physics2D.OverlapCircle(
+            groundCheck.position,
+            0.2f,
+            groundLayer
+        );
+    }
+
+    // =========================================================
+    // INTERACTION
+    // =========================================================
+
+    private void OnInteract(InputAction.CallbackContext context)
+    {
+        if (!IsOwner)
+            return;
+
+        Interact();
+    }
+
+    private void Interact()
+    {
+        Collider2D hit = Physics2D.OverlapCircle(
+            transform.position,
+            interactRange,
+            interactableLayer
+        );
+
+        if (hit == null)
+        {
+            Debug.Log("Tidak ada object yang bisa di-interact.");
+            return;
+        }
+
+        KeysChamber chamber =
+            hit.GetComponent<KeysChamber>();
+
+        if (chamber == null)
+        {
+            Debug.Log(
+                "Object ditemukan, tetapi bukan KeysChamber."
+            );
+
+            return;
+        }
+
+        if (hasKey)
+        {
+            chamber.InsertKey();
+
+            hasKey = false;
+
+            Debug.Log(
+                "Key berhasil dimasukkan ke Chamber."
+            );
+        }
+        else
+        {
+            Debug.Log(
+                "Kamu butuh Key untuk mengaktifkan Chamber!"
+            );
+        }
+    }
+
+    // =========================================================
+    // GIZMOS
+    // =========================================================
+
+    private void OnDrawGizmosSelected()
+    {
+        // Interaction range
+        Gizmos.color = Color.yellow;
+
+        Gizmos.DrawWireSphere(
+            transform.position,
+            interactRange
+        );
+
+        // Ground check
+        if (groundCheck != null)
+        {
+            Gizmos.color = Color.green;
+
+            Gizmos.DrawWireSphere(
+                groundCheck.position,
+                0.2f
+            );
+        }
     }
 }
