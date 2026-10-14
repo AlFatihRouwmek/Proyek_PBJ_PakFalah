@@ -20,6 +20,18 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float interactRange = 1.5f;
     [SerializeField] private LayerMask interactableLayer;
 
+    [Header("Player Visuals")]
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Sprite redPlayerSprite;
+    [SerializeField] private Sprite bluePlayerSprite;
+
+    // NetworkVariable untuk menentukan apakah player ini warna Biru atau bukan (False = Merah, True = Biru)
+    public NetworkVariable<bool> isBluePlayer = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     private Rigidbody2D rb;
     private float horizontalInput;
 
@@ -44,12 +56,31 @@ public class PlayerMovement : NetworkBehaviour
         interactAction.performed += ctx => Interact();
     }
 
-    // Gantikan OnEnable/OnDisable dengan OnNetworkSpawn/OnNetworkDespawn
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
-        // HANYA aktifkan input jika objek karakter ini adalah milik pemain lokal ini
+        // 1. HANYA SERVER YANG MENENTUKAN WARNA BERDASARKAN URUTAN MASUK (CLIENT ID)
+        if (IsServer)
+        {
+            // Jika Client ID lebih dari 0 (berarti Player 2 / Client), set jadi Biru (true)
+            if (OwnerClientId > 0)
+            {
+                isBluePlayer.Value = true;
+            }
+            else
+            {
+                isBluePlayer.Value = false; // Host / Player 1 tetap Merah
+            }
+        }
+
+        // 2. TERAPKAN SPRITE AWAL SAAT SPAWN
+        UpdatePlayerSprite(isBluePlayer.Value);
+
+        // 3. DAFTARKAN LISTENER AGAR SPRITE BERUBAH JIKA NILAI NETWORK VARIABLE BERUBAH
+        isBluePlayer.OnValueChanged += OnPlayerColorChanged;
+
+        // 4. AKTIFKAN INPUT HANYA UNTUK PEMILIK LOKAL
         if (IsOwner)
         {
             moveAction.Enable();
@@ -58,7 +89,6 @@ public class PlayerMovement : NetworkBehaviour
         }
         else
         {
-            // Nonaktifkan input untuk karakter pemain lain yang dirender di layar kita
             moveAction.Disable();
             jumpAction.Disable();
             interactAction.Disable();
@@ -68,23 +98,35 @@ public class PlayerMovement : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
+        isBluePlayer.OnValueChanged -= OnPlayerColorChanged;
 
         moveAction.Disable();
         jumpAction.Disable();
         interactAction.Disable();
     }
 
+    private void OnPlayerColorChanged(bool previousValue, bool newValue)
+    {
+        UpdatePlayerSprite(newValue);
+    }
+
+    private void UpdatePlayerSprite(bool isBlue)
+    {
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sprite = isBlue ? bluePlayerSprite : redPlayerSprite;
+        }
+    }
+
     void Update()
     {
         if (!IsOwner) return;
-
         horizontalInput = moveAction.ReadValue<float>();
     }
 
     void FixedUpdate()
     {
         if (!IsOwner) return;
-
         rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
     }
 

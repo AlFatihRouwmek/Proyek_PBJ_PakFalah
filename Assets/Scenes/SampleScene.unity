@@ -3434,6 +3434,7 @@ GameObject:
   - component: {fileID: 1743632055}
   - component: {fileID: 1743632054}
   - component: {fileID: 1743632053}
+  - component: {fileID: 1743632056}
   - component: {fileID: 1743632052}
   m_Layer: 7
   m_Name: KeysChamber_0
@@ -3454,7 +3455,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7ecf245fbe993e418dbcf0da007bb4e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KeysChamber
+  ShowTopMostFoldoutHeaderGroup: 1
   keysWithChamberSprite: {fileID: 6764160196451608564, guid: 2e6230383be8e38438622e9d0a8dc257, type: 3}
+  isActivated:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
 --- !u!61 &1743632053
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3575,6 +3582,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1743632056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1743632051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3972789018
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &1746144965
 GameObject:
   m_ObjectHideFlags: 0
