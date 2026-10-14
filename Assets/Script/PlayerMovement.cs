@@ -179,6 +179,24 @@ public class PlayerMovement : NetworkBehaviour
             return false;
         }
 
-        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+        // 1. Cek apakah menyentuh lantai (Ground Layer)
+        bool touchingGround = Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+
+        // 2. Cek apakah menyentuh kepala/badan pemain lain (menggunakan OverlapCircleAll atau OverlapCircle dengan Collider)
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(groundCheck.position, 0.2f);
+        bool touchingPlayer = false;
+
+        foreach (Collider2D col in colliders)
+        {
+            // Memastikan objek yang diinjak adalah Player lain (bukan diri sendiri)
+            if (col.CompareTag("Player") && col.gameObject != gameObject)
+            {
+                touchingPlayer = true;
+                break;
+            }
+        }
+
+        // Karakter dianggap "di tanah" (bisa lompat) jika menyentuh Ground ATAU menyentuh Player lain
+        return touchingGround || touchingPlayer;
     }
 }

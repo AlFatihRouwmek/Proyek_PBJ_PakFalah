@@ -182,9 +182,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  spriteRenderer: {fileID: -635743902160562321}
-  redPlayerSprite: {fileID: 8165104264091725776, guid: 9e21e994e7e8fa347847e1ff11f651e7, type: 3}
-  bluePlayerSprite: {fileID: -2512114499305570114, guid: ed6582d1e8ae98a4aa7b96506d7bddfa, type: 3}
   moveSpeed: 8
   jumpForce: 10
   groundCheck: {fileID: 3048574475561693529}
@@ -196,6 +193,14 @@ MonoBehaviour:
   interactableLayer:
     serializedVersion: 2
     m_Bits: 128
+  spriteRenderer: {fileID: -635743902160562321}
+  redPlayerSprite: {fileID: 8165104264091725776, guid: 9e21e994e7e8fa347847e1ff11f651e7, type: 3}
+  bluePlayerSprite: {fileID: -2512114499305570114, guid: ed6582d1e8ae98a4aa7b96506d7bddfa, type: 3}
+  isBluePlayer:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
 --- !u!114 &-1625540023984240083
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,7 +294,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 10
   m_MaskInteraction: 0
   m_Sprite: {fileID: 8165104264091725776, guid: 9e21e994e7e8fa347847e1ff11f651e7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

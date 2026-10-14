@@ -73,7 +73,7 @@ public class KeysChamber : NetworkBehaviour // 2. Ubah MonoBehaviour menjadi Net
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void InsertKeyServerRpc()
     {
         isActivated.Value = true;
